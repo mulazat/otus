@@ -6,13 +6,14 @@
 MACHINES = {
   # Указываем имя ВМ "kernel update"
   :"kernel-update" => {
-              #Какой vm box будем использовать
-              :box_name => "debian/buster64",
-              #Указываем количество ядер ВМ
-              :cpus => 2,
-              #Указываем количество ОЗУ в мегабайтах
-              :memory => 2048,
-            }
+    #Какой vm box будем использовать
+    :box_name => "alse-vanilla-gui-base/1.7.5uu1",
+    :box_url => "https://dl.astralinux.ru/vagrant/alse-vanilla-gui-base%2F1.7.5uu1",
+    #Указываем количество ядер ВМ
+    :cpus => 2,
+    #Указываем количество ОЗУ в мегабайтах
+    :memory => 2048,
+  }
 }
 
 Vagrant.configure("2") do |config|
@@ -22,15 +23,17 @@ Vagrant.configure("2") do |config|
     # Применяем конфигурацию ВМ
     config.vm.define boxname do |box|
       box.vm.box = boxconfig[:box_name]
+      box.vm.box_url = boxconfig[:box_url]
       box.vm.host_name = boxname.to_s
       box.vm.provider "virtualbox" do |v|
         v.memory = boxconfig[:memory]
         v.cpus = boxconfig[:cpus]
       end
       config.vm.provision "shell", inline: <<-SHELL
-     apt-get update
-     apt-get install linux-image-5.10.0-0.deb10.30-amd64 -y
-  SHELL
+        sed -i 's/http/https/' /etc/apt/sources.list
+        apt-get update
+        apt-get install linux-image-5.10.0-0.deb10.30-amd64 -y
+      SHELL
     end
   end
 end
