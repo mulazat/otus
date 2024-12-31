@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+linux_nodes = {
+  "nfss" => { :ip => "192.168.60.10", :cpus => "1", :mem => "1024" },
+  "nfsc" => { :ip => "192.168.60.11", :cpus => "1", :mem => "1024" }
+}
+
+Vagrant.configure("2") do |config|
+    config.vm.box = "alse-gui-base/1.7.5uu1"
+    config.vm.box_url = "https://dl.astralinux.ru/vagrant/alse-gui-base%2F1.7.5uu1"
+    linux_nodes.each_with_index do |(hostname, cfg), index|
+        config.vm.define hostname do |node|
+            # Set hostname for host
+            node.vm.hostname = hostname
+            node.vm.provider "virtualbox" do |v|
+                v.memory = cfg[:mem]
+                v.cpus = cfg[:cpus]
+                # Set name for vm in Virtual Box
+                v.name = hostname
+                v.customize ['storageattach', :id,  '--storagectl', 'SATA Controller', '--port', 6, '--device', 0, '--type', 'dvddrive', '--medium', '/usr/share/virtualbox/VBoxGuestAdditions.iso']
+            end
+            # configure VMs network
+            node.vm.network :"private_network",
+            virtualbox__intnet: "net1",
+            ip: cfg[:ip],
+            :virtualbox__dhcp_enabled => false,
+            :virtualbox__forward_mode => "nat",
+            :virtualbox__netmask => "255.255.255.0",
+            :virtualbox__gateway => "192.168.60.1"
+            #node.vm.provision "shell", path: "../vboxprep.sh"
+            if node.vm.hostname == 'nfss'
+                node.vm.provision "shell", path: "nfss_script.sh"
+            else
+                node.vm.provision "shell", path: "nfsc_script.sh"
+            end
+        end 
+    end
+end

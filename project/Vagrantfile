@@ -1,0 +1,47 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+
+nodes = {
+  :web01     => {
+    :name    => "web-server-01",
+    :ip      => "192.168.56.11",
+    :cpus    => "1",
+    :mem     => "1024"
+  },
+  :web02     => {
+    :name    => "web-server-02",
+    :ip      => "192.168.56.12",
+    :cpus    => "1",
+    :mem     => "1024"
+  }
+}
+Vagrant.configure("2") do |config|
+  config.vm.box_url = "https://dl.astralinux.ru/vagrant/alse-gui-base%2F1.7.6"
+  config.vm.box = "alse-gui-base/1.7.6"
+  config.ssh.insert_key = false
+  config.vm.boot_timeout = 800
+  config.ssh.private_key_path = [".keys/vagrantkey", "~/.vagrant.d/insecure_private_key"]
+  config.vm.provision "file", source: ".keys/vagrantkey.pub", destination: "~/.ssh/authorized_keys"
+
+
+    nodes.each do |node, cfg|
+    config.vm.define node do |conf|
+      conf.vm.hostname = cfg[:name]
+
+      #conf.vm.network "private_network", ip: cfg[:ip], type: "dhcp", auto_config: false
+      conf.vm.network "private_network", ip: cfg[:ip], netmask: '255.255.255.0', dhcp_enabled: false
+      conf.vm.provider "virtualbox" do |v|
+        v.cpus = cfg[:cpus]
+        v.memory = cfg[:mem]
+      end
+      conf.vm.provision "ansible" do |ansible|
+        ansible.verbose = "vv"
+        ansible.become = "true"
+        ansible.playbook = "provision/vboxguest.yml"
+        # ansible.playbook = "provision/role_php.yml"
+      end
+    end
+  end
+
+end

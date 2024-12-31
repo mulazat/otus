@@ -1,0 +1,24 @@
+---
+language: python
+dist: bionic
+services: docker
+
+env:
+  matrix:
+    - MOLECULE_PLATFORM: debian
+      MOLECULE_IMAGE: buster-slim
+      MOLECULE_COMMAND:
+
+install:
+  - pip install molecule docker
+
+# before_script:
+#   - cd ../
+#   - mv ansible-role-${ROLE_NAME} PeterMosmans.${ROLE_NAME}
+#   - cd PeterMosmans.${ROLE_NAME}
+
+script:
+  - molecule test
+
+notifications:
+  webhooks: https://galaxy.ansible.com/api/v1/notifications/

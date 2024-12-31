@@ -1,0 +1,87 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+disk_controller = 'IDE' # MacOS. This setting is OS dependent. Details ttps://github.com/hashicorp/vagrant/issues/8105
+home = ENV['HOME']
+MACHINES = {
+    :zfs => {
+        :box_name => "alse-gui-base/1.7.5uu1",
+        :box_url => "https://dl.astralinux.ru/vagrant/alse-gui-base%2F1.7.5uu1",
+        :disks => {
+            :sata1 => {
+                :dfile => home + '/VirtualBox VMs/sata1.vdi',
+                :size => 512, # Megabytes
+                :port => 1
+            },
+            :sata2 => {
+                :dfile => home + '/VirtualBox VMs/sata2.vdi',
+                :size => 512,
+                :port => 2
+            },
+            :sata3 => {
+                :dfile => home + '/VirtualBox VMs/sata3.vdi',
+                :size => 512,
+                :port => 3
+            },
+            :sata4 => {
+                :dfile => home + '/VirtualBox VMs/sata4.vdi',
+                :size => 512,
+                :port => 4
+            },
+            :sata5 => {
+                :dfile => home + '/VirtualBox VMs/sata5.vdi',
+                :size => 512,
+                :port => 5
+            },
+            :sata6 => {
+                :dfile => home + '/VirtualBox VMs/sata6.vdi',
+                :size => 512,
+                :port => 6
+            },
+            :sata7 => {
+                :dfile => home + '/VirtualBox VMs/sata7.vdi',
+                :size => 512,
+                :port => 7
+            },
+            :sata8 => {
+                :dfile => home + '/VirtualBox VMs/sata8.vdi',
+                :size => 512,
+                :port => 8
+            },
+        }
+},
+}
+Vagrant.configure("2") do |config|
+    MACHINES.each do |boxname, boxconfig|
+        config.vm.define boxname do |box|
+            box.vm.box = boxconfig[:box_name]
+            box.vm.box_url = boxconfig[:box_url]
+            box.vm.host_name = "zfs"
+            box.vm.provider :virtualbox do |vb|
+                vb.customize ["modifyvm", :id, "--memory", "2048"]
+                needsController = false
+                boxconfig[:disks].each do |dname, dconf|
+                    unless File.exist?(dconf[:dfile])
+                        vb.customize ['createhd', '--filename', dconf[:dfile],
+                        '--variant', 'Fixed', '--size', dconf[:size]]
+                        needsController = true
+                    end
+                end
+                    if needsController == true
+                        vb.customize ["storagectl", :id, "--name", "SATA",
+                        "--add", "sata" ]
+                        boxconfig[:disks].each do |dname, dconf|
+                            vb.customize ['storageattach', :id, '--storagectl',
+                            'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd',
+                            '--medium', dconf[:dfile]]
+                            vb.customize ['storageattach', :id,  '--storagectl', 'SATA Controller', '--port', 9, '--device', 0, '--type', 'dvddrive', '--medium', '/usr/share/virtualbox/VBoxGuestAdditions.iso']
+                        end
+                    end
+            end
+            box.vm.provision "shell", inline: <<-SHELL
+            apt-get -y install zfs-$(uname -r)
+            modprobe zfs
+            apt-get -y --no-install-recommends install zfsutils
+            SHELL
+        end
+    end
+end
